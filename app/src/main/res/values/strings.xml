@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">作业采集器</string>
+    <string name="chinese">语文</string>
+    <string name="english">英语</string>
+    <string name="math">数学</string>
+    <string name="politics">政治</string>
+    <string name="history">历史</string>
+    <string name="physics">物理</string>
+    <string name="chemistry">化学</string>
+    <string name="biology">生物</string>
+    <string name="geography">地理</string>
+    <string name="collect_warnning">请将采集的</string>
+    <string name="collect_warnning_bac">作业，拍到框里.</string>
+
+    <string name="picture">Picture</string>
+    <string name="description_info">Info</string>
+    <string name="request_permission">This sample needs camera permission.</string>
+    <string name="camera_error">This device doesn\'t support Camera2 API.</string>
+</resources>

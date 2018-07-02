@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="host_30">30dp</dimen>
+    <dimen name="host_8">8dp</dimen>
+    <dimen name="host_60">60dp</dimen>
+    <dimen name="host_2">2dp</dimen>
+
+    <dimen name="host_text_20">20sp</dimen>
+    <dimen name="host_text_16">16sp</dimen>
+</resources>

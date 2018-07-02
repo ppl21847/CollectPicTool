@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/sample_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:layout_gravity="center"
+        android:layout_marginTop="@dimen/host_30"
+        android:layout_marginBottom="@dimen/host_30"
+        android:textColor="@color/colorAccent"
+        android:textSize="@dimen/host_text_20"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="年级:  "
+            android:textSize="20sp"
+            android:textColor="#ff0000"
+            android:layout_margin="@dimen/host_8"/>
+
+        <Spinner
+            android:id="@+id/sp_grade"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:entries="@array/grade"
+            android:layout_margin="@dimen/host_8"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="@dimen/host_8"
+        android:paddingLeft="@dimen/host_30"
+        android:paddingRight="@dimen/host_30"
+        android:gravity="center">
+        <Button
+            android:id="@+id/bt_chinese"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="@dimen/host_30"
+            android:text="@string/chinese"
+            android:textSize="@dimen/host_text_16"/>
+
+        <Button
+            android:id="@+id/bt_math"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/host_30"
+            android:text="@string/math"
+            android:textSize="@dimen/host_text_16"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="@dimen/host_30"
+        android:paddingRight="@dimen/host_30"
+        android:paddingTop="@dimen/host_30"
+        android:gravity="center">
+        <Button
+            android:id="@+id/bt_english"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="@dimen/host_30"
+            android:text="@string/english"
+            android:textSize="@dimen/host_text_16"/>
+
+        <Button
+            android:id="@+id/bt_politics"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/host_30"
+            android:text="@string/politics"
+            android:textSize="@dimen/host_text_16"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="@dimen/host_30"
+        android:paddingRight="@dimen/host_30"
+        android:paddingTop="@dimen/host_30"
+        android:gravity="center">
+        <Button
+            android:id="@+id/bt_history"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="@dimen/host_30"
+            android:text="@string/history"
+            android:textSize="@dimen/host_text_16"/>
+
+        <Button
+            android:id="@+id/bt_physics"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/host_30"
+            android:text="@string/physics"
+            android:textSize="@dimen/host_text_16"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="@dimen/host_30"
+        android:paddingRight="@dimen/host_30"
+        android:paddingTop="@dimen/host_30"
+        android:gravity="center">
+        <Button
+            android:id="@+id/bt_chemistry"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="@dimen/host_30"
+            android:text="@string/chemistry"
+            android:textSize="@dimen/host_text_16"/>
+
+        <Button
+            android:id="@+id/bt_geography"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/host_30"
+            android:text="@string/biology"
+            android:textSize="@dimen/host_text_16"/>
+    </LinearLayout>
+
+</LinearLayout>
