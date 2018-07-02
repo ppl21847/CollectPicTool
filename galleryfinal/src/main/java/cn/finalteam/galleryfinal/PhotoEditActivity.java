@@ -550,7 +550,7 @@ public class PhotoEditActivity extends CropImageActivity implements AdapterView.
         Log.e("ssssssssss","select img size: "+mSelectPhotoList.size());
         uploadDialog = ProgressDialog.show(
                 this, null, getResources().getString(R.string.uploadImg), true, false);
-
+        uploadDialog.setCancelable(false);
         new Thread(new Runnable() {
             @Override
             public void run() {

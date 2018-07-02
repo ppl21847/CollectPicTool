@@ -24,16 +24,20 @@ import android.graphics.BitmapRegionDecoder;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.opengl.GLES10;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -120,7 +124,7 @@ public abstract class CropImageActivity extends MonitoredActivity {
         this.imageView.clear();
         if (sourceUri != null) {
             exifRotation = CropUtil.getExifRotation(CropUtil.getFromMediaUri(this, getContentResolver(), sourceUri));
-
+            Log.e("sssssssss","get exifRotation: "+exifRotation);
             InputStream is = null;
             try {
                 sampleSize = calculateBitmapSampleSize(sourceUri);
@@ -295,6 +299,11 @@ public abstract class CropImageActivity extends MonitoredActivity {
             }
         }
 
+        if(exifRotation == 90 || exifRotation == 270){
+            int tmp = outHeight;
+            outHeight = outWidth;
+            outWidth = tmp;
+        }
         try {
             croppedImage = decodeRegionCrop(r, outWidth, outHeight);
         } catch (IllegalArgumentException e) {
@@ -303,6 +312,7 @@ public abstract class CropImageActivity extends MonitoredActivity {
         }
 
         if (croppedImage != null) {
+            Log.e("ssssssssssssss","exifRotation: "+exifRotation);
             imageView.setImageRotateBitmapResetBase(new RotateBitmap(croppedImage, exifRotation), true);
             imageView.center();
             imageView.highlightViews.clear();
@@ -313,6 +323,7 @@ public abstract class CropImageActivity extends MonitoredActivity {
     private void saveImage(Bitmap croppedImage, final File saveFile) {
         if (croppedImage != null) {
             final Bitmap b = croppedImage;
+            Log.e("sssssssss","save Bitmap width:"+croppedImage.getWidth()+",height:"+croppedImage.getHeight());
             CropUtil.startBackgroundJob(this, null, getResources().getString(R.string.saving),
                     new Runnable() {
                         public void run() {
@@ -381,38 +392,122 @@ public abstract class CropImageActivity extends MonitoredActivity {
         System.gc();
     }
 
-    private void saveOutput(Bitmap croppedImage, File saveFile) {
-        if (saveFile != null) {
-            OutputStream outputStream = null;
-            try {
-                outputStream = getContentResolver().openOutputStream(Uri.fromFile(saveFile));
-                if (outputStream != null) {
-                    String ext = FilenameUtils.getExtension(saveFile.getAbsolutePath());
-                    Bitmap.CompressFormat format;
-                    if ( ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("jpeg") ) {
-                        format = Bitmap.CompressFormat.JPEG;
-                        croppedImage.compress(format, 90, outputStream);
-                    } else {
-                        format = Bitmap.CompressFormat.PNG;
-                        croppedImage.compress(format, 100, outputStream);
-                    }
-                }
-            } catch (IOException e) {
-                setCropSaveException(e);
-                ILogger.e(e);
-            } finally {
-                CropUtil.closeSilently(outputStream);
+    /**
+     * 读取图片属性：旋转的角度
+     * @param path 图片绝对路径
+     * @return degree旋转的角度
+     */
+    public int readPictureDegree(String path) {
+        int degree  = 0;
+        try {
+            ExifInterface exifInterface = new ExifInterface(path);
+            int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    degree = 90;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    degree = 180;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    degree = 270;
+                    break;
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return degree;
+    }
 
-            CropUtil.copyExifRotation(
+    /**
+     * 将图片按照某个角度进行旋转
+     *
+     * @param bm
+     *            需要旋转的图片
+     * @param degree
+     *            旋转角度
+     * @return 旋转后的图片
+     */
+    public Bitmap rotateBitmapByDegree(Bitmap bm, int degree) {
+        Bitmap returnBm = null;
+
+        // 根据旋转角度，生成旋转矩阵
+        Matrix matrix = new Matrix();
+        matrix.postRotate(degree);
+        try {
+            // 将原始图片按照旋转矩阵进行旋转，并得到新的图片
+            returnBm = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(),
+                    bm.getHeight(), matrix, true);
+        } catch (OutOfMemoryError e) {
+        }
+        if (returnBm == null) {
+            returnBm = bm;
+        }
+        if (bm != returnBm) {
+            bm.recycle();
+        }
+        return returnBm;
+    }
+
+    /**
+     * 旋转图片
+     * @param angle
+     * @param bitmap
+     * @return Bitmap
+     */
+    public Bitmap rotaingImageView(int angle , Bitmap bitmap) {
+        //旋转图片 动作
+        Matrix matrix = new Matrix();;
+        matrix.postRotate(angle);
+        System.out.println("angle2=" + angle);
+        // 创建新的图片
+        Bitmap resizedBitmap = Bitmap.createBitmap(bitmap, 0, 0,
+                bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        return resizedBitmap;
+    }
+
+
+    private void saveOutput(Bitmap croppedImage, File saveFile) {
+        Log.e("sssssssss","save in Bitmap width:"+croppedImage.getWidth()+",height:"+croppedImage.getHeight());
+        if (saveFile != null) {
+            saveToSd(croppedImage,saveFile);
+
+            /**
+             * 获取图片的旋转角度，有些系统把拍照的图片旋转了，有的没有旋转
+             */
+            Log.e("ssssssssss","exifRotation is: "+exifRotation);
+            /*if( exifRotation != 0){
+                BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+                Bitmap cameraBitmap = BitmapFactory.decodeFile(saveFile.getAbsolutePath(), bitmapOptions);
+                Bitmap bitmap = cameraBitmap;
+                 // 把图片旋转为正的方向
+                bitmap = rotaingImageView(exifRotation, bitmap);
+                saveToSd(bitmap,saveFile);
+                bitmap.recycle();
+            }*/
+
+           /*CropUtil.copyExifRotation(
                     CropUtil.getFromMediaUri(this, getContentResolver(), sourceUri),
                     CropUtil.getFromMediaUri(this, getContentResolver(), Uri.fromFile(saveFile))
-            );/**/
-
+            ); */
+            Bitmap saveImg = BitmapFactory.decodeFile(saveFile.getAbsolutePath());
+            Log.e("ssssssssss","saveImg width: "+saveImg.getWidth()+",height: "+saveImg.getHeight());
             setCropSaveSuccess(saveFile);
             Log.e("ssssssssss","2222更新截取的图片至相册");
             Log.e("ssssssssss","2222saveFile: "+saveFile);
             sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE,Uri.fromFile(saveFile)));
+
+            // 最后通知图库更新
+            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + saveFile)));
+
+            try {
+                MediaStore.Images.Media.insertImage(getContentResolver(), saveFile.getAbsolutePath(), saveFile.getName(), null);
+            } catch(FileNotFoundException e) {
+                e.printStackTrace();
+            }
+
+
+            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(saveFile)));
         }
 
         final Bitmap b = croppedImage;
@@ -422,6 +517,52 @@ public abstract class CropImageActivity extends MonitoredActivity {
                 b.recycle();
             }
         });
+    }
+
+    private void saveToSd(Bitmap croppedImage, File saveFile) {
+        Log.e("sssssssss","save Bitmap width:"+croppedImage.getWidth()+",height:"+croppedImage.getHeight());
+        if(exifRotation != 0){
+            croppedImage = rotateBitmapByDegree(croppedImage,exifRotation);
+        }
+
+       /* OutputStream outputStream = null;
+        try {
+            outputStream = getContentResolver().openOutputStream(Uri.fromFile(saveFile));
+            if (outputStream != null) {
+                String ext = FilenameUtils.getExtension(saveFile.getAbsolutePath());
+                Bitmap.CompressFormat format;
+                if ( ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("jpeg") ) {
+                    format = Bitmap.CompressFormat.JPEG;
+                    croppedImage.compress(format, 100, outputStream);
+                } else {
+                    format = Bitmap.CompressFormat.PNG;
+                    croppedImage.compress(format, 100, outputStream);
+                }
+            }
+        } catch (IOException e) {
+            setCropSaveException(e);
+            ILogger.e(e);
+        } finally {
+            CropUtil.closeSilently(outputStream);
+        }*/
+
+        try {
+            FileOutputStream fos = new FileOutputStream(saveFile);
+            String ext = FilenameUtils.getExtension(saveFile.getAbsolutePath());
+            Bitmap.CompressFormat format;
+            if ( ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("jpeg") ) {
+                format = Bitmap.CompressFormat.JPEG;
+            } else {
+                format = Bitmap.CompressFormat.PNG;
+            }
+            croppedImage.compress(format, 100, fos);
+            fos.flush();
+            fos.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

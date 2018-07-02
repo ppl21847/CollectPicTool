@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void takePic(String subject, int grade) {
-        File takePhotoFolder = new File(Environment.getExternalStorageDirectory(), "/DCIM/collect/" +subject+ "/");
+        File takePhotoFolder = new File(Environment.getExternalStorageDirectory(), "/DCIM/" +subject+ "/");
         CoreConfig coreConfig = new CoreConfig.Builder(MainActivity.this, imageLoader, themeConfig)
                 .setFunctionConfig(functionConfig)
                 .setPauseOnScrollListener(pauseOnScrollListener)

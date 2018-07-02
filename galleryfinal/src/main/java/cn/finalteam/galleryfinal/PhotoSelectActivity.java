@@ -376,7 +376,7 @@ public class PhotoSelectActivity extends PhotoBaseActivity implements View.OnCli
                 return;
             }
 
-            takePhotoAction();
+            requestCameraPermission();
         } else if ( id == R.id.iv_back ) {
             if ( mLlFolderPanel.getVisibility() == View.VISIBLE ) {
                 mLlTitle.performClick();
@@ -507,13 +507,35 @@ public class PhotoSelectActivity extends PhotoBaseActivity implements View.OnCli
 
     @Override
     public void onPermissionsGranted(List<String> list) {
-        getPhotos();
+        if(list.contains(Manifest.permission.CAMERA)){
+            takePhotoAction();
+        }else if(list.contains( Manifest.permission.READ_EXTERNAL_STORAGE)){
+            getPhotos();
+        }
     }
 
     @Override
     public void onPermissionsDenied(List<String> list) {
-        mTvEmptyView.setText(R.string.permissions_denied_tips);
+        if(list.contains(Manifest.permission.CAMERA)){
+            mTvEmptyView.setText(R.string.permissions_denied_camera_tips);
+        }else if(list.contains( Manifest.permission.READ_EXTERNAL_STORAGE)){
+            mTvEmptyView.setText(R.string.permissions_denied_tips);
+        }
         mIvTakePhoto.setVisibility(View.GONE);
+    }
+
+    /**
+     * 获取所有图片
+     */
+    @AfterPermissionGranted(GalleryFinal.PERMISSIONS_CODE_CAMERA)
+    private void requestCameraPermission() {
+        if (EasyPermissions.hasPermissions(this, Manifest.permission.CAMERA)) {
+            takePhotoAction();
+        }else {
+            // Ask for one permission
+            EasyPermissions.requestPermissions(this, getString(R.string.permissions_tips_gallery),
+                    GalleryFinal.PERMISSIONS_CODE_CAMERA, Manifest.permission.CAMERA);
+        }
     }
 
     /**

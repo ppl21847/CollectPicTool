@@ -20,6 +20,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
@@ -29,6 +30,7 @@ import android.view.Window;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -200,6 +202,18 @@ public abstract class PhotoBaseActivity extends Activity implements EasyPermissi
             Log.e("ssssssssss","filePath: "+filePath);
             mMediaScanner.scanFile(filePath, "image/jpeg");
         }
+
+        // 最后通知图库更新  4.4一下
+        sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + filePath)));
+        File tmpImg = new File(filePath);
+        try {
+            MediaStore.Images.Media.insertImage(getContentResolver(), tmpImg.getAbsolutePath(), tmpImg.getName(), null);
+        } catch(FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+
+        sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(tmpImg)));
     }
 
     protected void resultData(ArrayList<PhotoInfo> photoList) {
