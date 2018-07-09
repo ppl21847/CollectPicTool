@@ -24,6 +24,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -31,20 +32,25 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import cn.finalteam.galleryfinal.adapter.PhotoEditListAdapter;
 import cn.finalteam.galleryfinal.model.PhotoInfo;
 import cn.finalteam.galleryfinal.model.PhotoTempModel;
 import cn.finalteam.galleryfinal.utils.ILogger;
 import cn.finalteam.galleryfinal.utils.MediaScanner;
+import cn.finalteam.galleryfinal.utils.OkHttpUtils;
 import cn.finalteam.galleryfinal.utils.RecycleViewBitmapUtils;
 import cn.finalteam.galleryfinal.utils.Utils;
 import cn.finalteam.galleryfinal.widget.FloatingActionButton;
@@ -56,6 +62,11 @@ import cn.finalteam.toolsfinal.ActivityManager;
 import cn.finalteam.toolsfinal.StringUtils;
 import cn.finalteam.toolsfinal.io.FileUtils;
 import cn.finalteam.toolsfinal.io.FilenameUtils;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Desction:图片裁剪
@@ -73,7 +84,8 @@ public class PhotoEditActivity extends CropImageActivity implements AdapterView.
     private final int CROP_SUC = 1;//裁剪成功
     private final int CROP_FAIL = 2;//裁剪失败
     private final int UPDATE_PATH = 3;//更新path
-    private final int UPLOAD_STATE = 7;     //上传图片至服务器结果
+    private final int UPLOAD_SUCESS = 7;     //上传图片至服务器结果
+    private final int UPLOAD_FALUE = 4;
 
     private ImageView mIvBack;
     private TextView mTvTitle;
@@ -109,6 +121,7 @@ public class PhotoEditActivity extends CropImageActivity implements AdapterView.
     private ProgressDialog uploadDialog;
 
     private boolean gallayCorpState = false;
+
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -194,11 +207,16 @@ public class PhotoEditActivity extends CropImageActivity implements AdapterView.
                 if (GalleryFinal.getFunctionConfig().isForceCrop() && !GalleryFinal.getFunctionConfig().isForceCropEdit()) {
                     resultAction();
                 }
-            }else if(msg.what == UPLOAD_STATE){
+            }else if(msg.what == UPLOAD_SUCESS){
                 if(uploadDialog != null && uploadDialog.isShowing()){
                     uploadDialog.dismiss();
                 }
                 resultAction();
+            }else if(msg.what == UPLOAD_FALUE){
+                if(uploadDialog != null && uploadDialog.isShowing()){
+                    uploadDialog.dismiss();
+                }
+                Toast.makeText(PhotoEditActivity.this,"图片上传失败",Toast.LENGTH_LONG).show();
             }
             corpPageState(false);
             mCropState = false;
@@ -554,16 +572,33 @@ public class PhotoEditActivity extends CropImageActivity implements AdapterView.
         new Thread(new Runnable() {
             @Override
             public void run() {
-                Message msg = new Message();
-                msg.what = UPLOAD_STATE;
+                final Message msg = new Message();
+
+                List<String> fileName = new ArrayList<>();
                 for(int i=0;i<mSelectPhotoList.size();i++){
                     Log.e("ssssssssss",i + ",PhotoPath: "+mSelectPhotoList.get(i).getPhotoPath());
+                    fileName.add(mSelectPhotoList.get(i).getPhotoPath());
                 }
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+
+                OkHttpUtils okHttpUtils = new OkHttpUtils();
+                OkHttpClient okHttpClient = new OkHttpClient();
+                Map<String,String>param = new HashMap<>();
+                param.put("grade",CoreConfig.grade);
+                param.put("subject",CoreConfig.subject);
+                Request request = okHttpUtils.getRequest("",param,"image",fileName);
+                Call call = okHttpClient.newCall(request);
+                call.enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        msg.what = UPLOAD_FALUE;
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        msg.what = UPLOAD_SUCESS;
+                    }
+                });
+
                 mHanlder.sendMessage(msg);
             }
         }).start();

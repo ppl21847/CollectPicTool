@@ -36,8 +36,8 @@ public class CoreConfig {
     private ThemeConfig themeConfig;
     private FunctionConfig functionConfig;
     private int animRes;
-    private String grade;
-    private String subject;
+    public static String grade;
+    public static String subject;
     private AbsListView.OnScrollListener onScrollListener;
 
     private CoreConfig(Builder builder) {

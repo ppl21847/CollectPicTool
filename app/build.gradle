@@ -33,7 +33,4 @@ dependencies {
     compile 'com.android.support:support-v4:23.1.1'
     compile 'com.github.bumptech.glide:glide:3.6.1'
     implementation project(':galleryfinal')
-
-    compile 'com.squareup.okhttp3:okhttp:3.7.0'
-    compile 'com.squareup.okio:okio:1.12.0'
 }
