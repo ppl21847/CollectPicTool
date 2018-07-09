@@ -1,5 +1,6 @@
 package com.recg.collectpictool;
 
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
@@ -8,6 +9,7 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.recg.collectpictool.DButils.MyDbSql;
 import com.recg.collectpictool.listener.GlidePauseOnScrollListener;
 import com.recg.collectpictool.utils.GlideImageLoader;
 
@@ -42,7 +44,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     cn.finalteam.galleryfinal.ImageLoader imageLoader;
     ThemeConfig themeConfig;
     PauseOnScrollListener pauseOnScrollListener = null;
-    
+
+    MyDbSql dbHelper;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,6 +56,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         initView();
         initData();
+        initSqlite();
+    }
+
+    private void initSqlite() {
+        dbHelper = new MyDbSql(this,"uploadImg");
     }
 
     private void initTheme() {
@@ -148,12 +157,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void takePic(String subject, int grade) {
-        File takePhotoFolder = new File(Environment.getExternalStorageDirectory(), "/DCIM/" +subject+ "/");
+        //File takePhotoFolder = new File(Environment.getExternalStorageDirectory(), "/DCIM/" +subject+ "/");
         CoreConfig coreConfig = new CoreConfig.Builder(MainActivity.this, imageLoader, themeConfig)
                 .setFunctionConfig(functionConfig)
                 .setPauseOnScrollListener(pauseOnScrollListener)
-                .setTakePhotoFolder(takePhotoFolder)
-                .setEditPhotoCacheFolder(takePhotoFolder)
+                //.setTakePhotoFolder(takePhotoFolder)
+                //.setEditPhotoCacheFolder(takePhotoFolder)
                 .setNoAnimcation(false)
                 .build();
         coreConfig.setGrade(""+grade);

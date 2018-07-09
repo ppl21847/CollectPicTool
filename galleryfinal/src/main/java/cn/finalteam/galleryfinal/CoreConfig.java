@@ -55,14 +55,14 @@ public class CoreConfig {
         this.onScrollListener = builder.onScrollListener;
 
         if ( takePhotoFolder == null ) {
-            takePhotoFolder = new File(Environment.getExternalStorageDirectory(), "/collect/chinese/");
+            takePhotoFolder = new File(Environment.getExternalStorageDirectory(), "/DCIM/" + "GalleryFinal/");
         }
         if(!takePhotoFolder.exists()) {
             takePhotoFolder.mkdirs();
         }
 
         if ( editPhotoCacheFolder == null ) {
-            editPhotoCacheFolder = new File(Environment.getExternalStorageDirectory() + "/GalleryFinal/edittemp/");
+            editPhotoCacheFolder = new File(Environment.getExternalStorageDirectory(), "/DCIM/" + "GalleryFinal/");
         }
         if (!editPhotoCacheFolder.exists()) {
             editPhotoCacheFolder.mkdirs();

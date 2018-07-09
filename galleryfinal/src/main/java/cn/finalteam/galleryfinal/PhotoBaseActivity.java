@@ -17,7 +17,9 @@
 package cn.finalteam.galleryfinal;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -124,19 +126,23 @@ public abstract class PhotoBaseActivity extends Activity implements EasyPermissi
         }
 
         File takePhotoFolder = null;
-        if (StringUtils.isEmpty(mPhotoTargetFolder)) {
+
+        /*if (StringUtils.isEmpty(mPhotoTargetFolder)) {
             takePhotoFolder = GalleryFinal.getCoreConfig().getTakePhotoFolder();
         } else {
             takePhotoFolder = new File(mPhotoTargetFolder);
-        }
+        }*/
+        takePhotoFolder = GalleryFinal.getCoreConfig().getTakePhotoFolder();
+
         boolean suc = FileUtils.mkdirs(takePhotoFolder);
         File toFile;
-        if(GalleryFinal.getCoreConfig().getGrade().isEmpty() || GalleryFinal.getCoreConfig().getSubject().isEmpty()){
+
+       /* if(GalleryFinal.getCoreConfig().getGrade().isEmpty() || GalleryFinal.getCoreConfig().getSubject().isEmpty()){
             toFile = new File(takePhotoFolder, "IMG" + DateUtils.format(new Date(), "yyyyMMddHHmmss") + ".jpg");
         }else{
             toFile = new File(takePhotoFolder, "grade"+GalleryFinal.getCoreConfig().getGrade() + "_"+ GalleryFinal.getCoreConfig().getSubject()+ "_" + DateUtils.format(new Date(), "yyyyMMddHHmmss") + ".jpg");
-        }
-
+        }*/
+        toFile = new File(takePhotoFolder, "IMG" + DateUtils.format(new Date(), "yyyyMMddHHmmss") + ".jpg");
 
         ILogger.d("create folder=" + toFile.getAbsolutePath());
         if (suc) {
@@ -198,22 +204,40 @@ public abstract class PhotoBaseActivity extends Activity implements EasyPermissi
      * 更新相册
      */
     private void updateGallery(String filePath) {
-        if (mMediaScanner != null) {
+       /* if (mMediaScanner != null) {
             Log.e("ssssssssss","filePath: "+filePath);
             mMediaScanner.scanFile(filePath, "image/jpeg");
-        }
+        }*/
 
         // 最后通知图库更新  4.4一下
-        sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + filePath)));
+       // sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + filePath)));
+        //4.4以上
         File tmpImg = new File(filePath);
         try {
-            MediaStore.Images.Media.insertImage(getContentResolver(), tmpImg.getAbsolutePath(), tmpImg.getName(), null);
+            Log.e("ssssssssss","mpImg.getName(): "+tmpImg.getName());
+            String uriString = MediaStore.Images.Media.insertImage(getContentResolver(), filePath, tmpImg.getName(), null);
+            Log.e("ssssssssss","uriString: "+uriString);
+
+
+            File file1 = new File(getRealPathFromURI(Uri.parse(uriString),this));
+            Intent intent = new Intent();
+            intent.setAction(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            intent.setData(Uri.fromFile(file1));
+            sendBroadcast(intent);
         } catch(FileNotFoundException e) {
             e.printStackTrace();
         }
+    }
 
-
-        sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(tmpImg)));
+    //得到绝对地址
+    private static String getRealPathFromURI(Uri contentUri,Context context) {
+        String[] proj = { MediaStore.Images.Media.DATA };
+        Cursor cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+        cursor.moveToFirst();
+        String fileStr = cursor.getString(column_index);
+        cursor.close();
+        return fileStr;
     }
 
     protected void resultData(ArrayList<PhotoInfo> photoList) {

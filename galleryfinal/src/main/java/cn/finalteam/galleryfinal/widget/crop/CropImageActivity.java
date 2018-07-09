@@ -17,7 +17,9 @@
 package cn.finalteam.galleryfinal.widget.crop;
 
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
@@ -77,11 +79,13 @@ public abstract class CropImageActivity extends MonitoredActivity {
     private HighlightView cropView;
 
     private boolean cropEnabled;
+    private MediaScanner mMediaScanner;
 
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         setupWindowFlags();
+        mMediaScanner = new MediaScanner(this);
     }
 
     @TargetApi(Build.VERSION_CODES.KITKAT)
@@ -312,7 +316,6 @@ public abstract class CropImageActivity extends MonitoredActivity {
         }
 
         if (croppedImage != null) {
-            Log.e("ssssssssssssss","exifRotation: "+exifRotation);
             imageView.setImageRotateBitmapResetBase(new RotateBitmap(croppedImage, exifRotation), true);
             imageView.center();
             imageView.highlightViews.clear();
@@ -323,7 +326,6 @@ public abstract class CropImageActivity extends MonitoredActivity {
     private void saveImage(Bitmap croppedImage, final File saveFile) {
         if (croppedImage != null) {
             final Bitmap b = croppedImage;
-            Log.e("sssssssss","save Bitmap width:"+croppedImage.getWidth()+",height:"+croppedImage.getHeight());
             CropUtil.startBackgroundJob(this, null, getResources().getString(R.string.saving),
                     new Runnable() {
                         public void run() {
@@ -469,45 +471,55 @@ public abstract class CropImageActivity extends MonitoredActivity {
 
     private void saveOutput(Bitmap croppedImage, File saveFile) {
         Log.e("sssssssss","save in Bitmap width:"+croppedImage.getWidth()+",height:"+croppedImage.getHeight());
+
         if (saveFile != null) {
-            saveToSd(croppedImage,saveFile);
+            OutputStream outputStream = null;
+            try {
+                outputStream = getContentResolver().openOutputStream(Uri.fromFile(saveFile));
+                if (outputStream != null) {
+                    String ext = FilenameUtils.getExtension(saveFile.getAbsolutePath());
+                    Bitmap.CompressFormat format;
+                    if ( ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("jpeg") ) {
+                        format = Bitmap.CompressFormat.JPEG;
+                        croppedImage.compress(format, 90, outputStream);
+                    } else {
+                        format = Bitmap.CompressFormat.PNG;
+                        croppedImage.compress(format, 100, outputStream);
+                    }
+                }
+            } catch (IOException e) {
+                setCropSaveException(e);
+                ILogger.e(e);
+            } finally {
+                CropUtil.closeSilently(outputStream);
+            }
 
-            /**
-             * 获取图片的旋转角度，有些系统把拍照的图片旋转了，有的没有旋转
-             */
-            Log.e("ssssssssss","exifRotation is: "+exifRotation);
-            /*if( exifRotation != 0){
-                BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
-                Bitmap cameraBitmap = BitmapFactory.decodeFile(saveFile.getAbsolutePath(), bitmapOptions);
-                Bitmap bitmap = cameraBitmap;
-                 // 把图片旋转为正的方向
-                bitmap = rotaingImageView(exifRotation, bitmap);
-                saveToSd(bitmap,saveFile);
-                bitmap.recycle();
-            }*/
-
-           /*CropUtil.copyExifRotation(
+            CropUtil.copyExifRotation(
                     CropUtil.getFromMediaUri(this, getContentResolver(), sourceUri),
                     CropUtil.getFromMediaUri(this, getContentResolver(), Uri.fromFile(saveFile))
-            ); */
-            Bitmap saveImg = BitmapFactory.decodeFile(saveFile.getAbsolutePath());
-            Log.e("ssssssssss","saveImg width: "+saveImg.getWidth()+",height: "+saveImg.getHeight());
-            setCropSaveSuccess(saveFile);
-            Log.e("ssssssssss","2222更新截取的图片至相册");
-            Log.e("ssssssssss","2222saveFile: "+saveFile);
-            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE,Uri.fromFile(saveFile)));
+            );
 
-            // 最后通知图库更新
-            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + saveFile)));
+            setCropSaveSuccess(saveFile);
+
+            /*if (mMediaScanner != null) {
+                Log.e("ssssssssss","filePath: "+saveFile.getAbsolutePath());
+                mMediaScanner.scanFile(saveFile.getAbsolutePath(), "image/jpeg");
+            }*/
 
             try {
-                MediaStore.Images.Media.insertImage(getContentResolver(), saveFile.getAbsolutePath(), saveFile.getName(), null);
+                Log.e("ssssssssss","mpImg.getName(): "+saveFile.getName());
+                String uriString = MediaStore.Images.Media.insertImage(getContentResolver(), saveFile.getAbsolutePath(), saveFile.getName(), null);
+                Log.e("ssssssssss","uriString: "+uriString);
+
+
+                File file1 = new File(getRealPathFromURI(Uri.parse(uriString),this));
+                Intent intent = new Intent();
+                intent.setAction(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                intent.setData(Uri.fromFile(file1));
+                sendBroadcast(intent);
             } catch(FileNotFoundException e) {
                 e.printStackTrace();
             }
-
-
-            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(saveFile)));
         }
 
         final Bitmap b = croppedImage;
@@ -519,55 +531,23 @@ public abstract class CropImageActivity extends MonitoredActivity {
         });
     }
 
-    private void saveToSd(Bitmap croppedImage, File saveFile) {
-        Log.e("sssssssss","save Bitmap width:"+croppedImage.getWidth()+",height:"+croppedImage.getHeight());
-        if(exifRotation != 0){
-            croppedImage = rotateBitmapByDegree(croppedImage,exifRotation);
-        }
-
-       /* OutputStream outputStream = null;
-        try {
-            outputStream = getContentResolver().openOutputStream(Uri.fromFile(saveFile));
-            if (outputStream != null) {
-                String ext = FilenameUtils.getExtension(saveFile.getAbsolutePath());
-                Bitmap.CompressFormat format;
-                if ( ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("jpeg") ) {
-                    format = Bitmap.CompressFormat.JPEG;
-                    croppedImage.compress(format, 100, outputStream);
-                } else {
-                    format = Bitmap.CompressFormat.PNG;
-                    croppedImage.compress(format, 100, outputStream);
-                }
-            }
-        } catch (IOException e) {
-            setCropSaveException(e);
-            ILogger.e(e);
-        } finally {
-            CropUtil.closeSilently(outputStream);
-        }*/
-
-        try {
-            FileOutputStream fos = new FileOutputStream(saveFile);
-            String ext = FilenameUtils.getExtension(saveFile.getAbsolutePath());
-            Bitmap.CompressFormat format;
-            if ( ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("jpeg") ) {
-                format = Bitmap.CompressFormat.JPEG;
-            } else {
-                format = Bitmap.CompressFormat.PNG;
-            }
-            croppedImage.compress(format, 100, fos);
-            fos.flush();
-            fos.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    //得到绝对地址
+    private static String getRealPathFromURI(Uri contentUri,Context context) {
+        String[] proj = { MediaStore.Images.Media.DATA };
+        Cursor cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+        cursor.moveToFirst();
+        String fileStr = cursor.getString(column_index);
+        cursor.close();
+        return fileStr;
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (mMediaScanner != null) {
+            mMediaScanner.unScanFile();
+        }
         if (rotateBitmap != null) {
             rotateBitmap.recycle();
         }
