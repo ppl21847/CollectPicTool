@@ -501,10 +501,10 @@ public abstract class CropImageActivity extends MonitoredActivity {
 
             setCropSaveSuccess(saveFile);
 
-            /*if (mMediaScanner != null) {
+            if (mMediaScanner != null) {
                 Log.e("ssssssssss","filePath: "+saveFile.getAbsolutePath());
                 mMediaScanner.scanFile(saveFile.getAbsolutePath(), "image/jpeg");
-            }*/
+            }/**/
 
             try {
                 Log.e("ssssssssss","mpImg.getName(): "+saveFile.getName());

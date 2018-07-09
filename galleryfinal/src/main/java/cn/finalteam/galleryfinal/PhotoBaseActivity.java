@@ -204,14 +204,14 @@ public abstract class PhotoBaseActivity extends Activity implements EasyPermissi
      * 更新相册
      */
     private void updateGallery(String filePath) {
-       if (mMediaScanner != null) {
+       /* if (mMediaScanner != null) {
             Log.e("ssssssssss","mMediaScanner filePath: "+filePath);
             mMediaScanner.scanFile(filePath, "image/jpeg");
-        }/* */
+        }*/
 
         // 最后通知图库更新  4.4一下
-        Log.e("ssssssssss","Environment.getExternalStorageDirectory(): "+Environment.getExternalStorageDirectory());
-        sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + filePath)));
+        //Log.e("ssssssssss","Environment.getExternalStorageDirectory(): "+Environment.getExternalStorageDirectory());
+        //sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + filePath)));
         //4.4以上
         File tmpImg = new File(filePath);
         try {
@@ -225,7 +225,7 @@ public abstract class PhotoBaseActivity extends Activity implements EasyPermissi
             Log.e("ssssssssss","file1.getAbsolutePath(): "+file1.getAbsolutePath());
             Intent intent = new Intent();
             intent.setAction(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-            intent.setData(Uri.fromFile(tmpImg));
+            intent.setData(Uri.fromFile(file1));
             sendBroadcast(intent);
         } catch(FileNotFoundException e) {
             e.printStackTrace();
