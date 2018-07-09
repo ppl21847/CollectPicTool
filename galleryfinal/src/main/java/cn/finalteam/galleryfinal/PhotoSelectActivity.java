@@ -507,11 +507,11 @@ public class PhotoSelectActivity extends PhotoBaseActivity implements View.OnCli
 
     @Override
     public void onPermissionsGranted(List<String> list) {
-        if(list.contains(Manifest.permission.CAMERA)){
+        /*if(list.contains(Manifest.permission.CAMERA)){
             takePhotoAction();
         }else if(list.contains( Manifest.permission.READ_EXTERNAL_STORAGE)){
             getPhotos();
-        }
+        }*/
     }
 
     @Override

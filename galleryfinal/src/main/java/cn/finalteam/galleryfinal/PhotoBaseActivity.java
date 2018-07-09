@@ -204,25 +204,28 @@ public abstract class PhotoBaseActivity extends Activity implements EasyPermissi
      * 更新相册
      */
     private void updateGallery(String filePath) {
-       /* if (mMediaScanner != null) {
-            Log.e("ssssssssss","filePath: "+filePath);
+       if (mMediaScanner != null) {
+            Log.e("ssssssssss","mMediaScanner filePath: "+filePath);
             mMediaScanner.scanFile(filePath, "image/jpeg");
-        }*/
+        }/* */
 
         // 最后通知图库更新  4.4一下
-       // sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + filePath)));
+        Log.e("ssssssssss","Environment.getExternalStorageDirectory(): "+Environment.getExternalStorageDirectory());
+        sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + filePath)));
         //4.4以上
         File tmpImg = new File(filePath);
         try {
+            Log.e("ssssssssss","filePath: "+filePath);
             Log.e("ssssssssss","mpImg.getName(): "+tmpImg.getName());
             String uriString = MediaStore.Images.Media.insertImage(getContentResolver(), filePath, tmpImg.getName(), null);
             Log.e("ssssssssss","uriString: "+uriString);
 
 
             File file1 = new File(getRealPathFromURI(Uri.parse(uriString),this));
+            Log.e("ssssssssss","file1.getAbsolutePath(): "+file1.getAbsolutePath());
             Intent intent = new Intent();
             intent.setAction(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-            intent.setData(Uri.fromFile(file1));
+            intent.setData(Uri.fromFile(tmpImg));
             sendBroadcast(intent);
         } catch(FileNotFoundException e) {
             e.printStackTrace();
