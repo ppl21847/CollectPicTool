@@ -24,7 +24,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Message;
-import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -34,24 +33,31 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import cn.finalteam.galleryfinal.adapter.PhotoEditListAdapter;
 import cn.finalteam.galleryfinal.model.PhotoInfo;
 import cn.finalteam.galleryfinal.model.PhotoTempModel;
 import cn.finalteam.galleryfinal.utils.ILogger;
-import cn.finalteam.galleryfinal.utils.MediaScanner;
+import cn.finalteam.galleryfinal.utils.ImageBase64;
+import cn.finalteam.galleryfinal.utils.InfoEntity;
+import cn.finalteam.galleryfinal.utils.NetResultEntity;
 import cn.finalteam.galleryfinal.utils.OkHttpUtils;
 import cn.finalteam.galleryfinal.utils.RecycleViewBitmapUtils;
+import cn.finalteam.galleryfinal.utils.UploadImageAPI;
 import cn.finalteam.galleryfinal.utils.Utils;
 import cn.finalteam.galleryfinal.widget.FloatingActionButton;
 import cn.finalteam.galleryfinal.widget.HorizontalListView;
@@ -62,11 +68,10 @@ import cn.finalteam.toolsfinal.ActivityManager;
 import cn.finalteam.toolsfinal.StringUtils;
 import cn.finalteam.toolsfinal.io.FileUtils;
 import cn.finalteam.toolsfinal.io.FilenameUtils;
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import retrofit2.Call;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
  * Desction:图片裁剪
@@ -74,6 +79,9 @@ import okhttp3.Response;
  * Date:15/10/10 下午5:40
  */
 public class PhotoEditActivity extends CropImageActivity implements AdapterView.OnItemClickListener, View.OnClickListener {
+    public static String baseUrl = "http://114.215.83.97:9090";
+    public static volatile Retrofit retrofit = null;
+    public static volatile UploadImageAPI api = null;
 
     static final String CROP_PHOTO_ACTION = "crop_photo_action";
     static final String TAKE_PHOTO_ACTION = "take_photo_action";
@@ -212,11 +220,12 @@ public class PhotoEditActivity extends CropImageActivity implements AdapterView.
                     uploadDialog.dismiss();
                 }
                 resultAction();
+                Toast.makeText(PhotoEditActivity.this,"图片上传成功",Toast.LENGTH_LONG).show();
             }else if(msg.what == UPLOAD_FALUE){
                 if(uploadDialog != null && uploadDialog.isShowing()){
                     uploadDialog.dismiss();
                 }
-                Toast.makeText(PhotoEditActivity.this,"图片上传失败",Toast.LENGTH_LONG).show();
+                Toast.makeText(PhotoEditActivity.this,(String)msg.obj,Toast.LENGTH_LONG).show();
             }
             corpPageState(false);
             mCropState = false;
@@ -574,7 +583,7 @@ public class PhotoEditActivity extends CropImageActivity implements AdapterView.
             public void run() {
                 final Message msg = new Message();
 
-                List<String> fileName = new ArrayList<>();
+                /*List<String> fileName = new ArrayList<>();
                 for(int i=0;i<mSelectPhotoList.size();i++){
                     Log.e("ssssssssss",i + ",PhotoPath: "+mSelectPhotoList.get(i).getPhotoPath());
                     fileName.add(mSelectPhotoList.get(i).getPhotoPath());
@@ -585,21 +594,118 @@ public class PhotoEditActivity extends CropImageActivity implements AdapterView.
                 Map<String,String>param = new HashMap<>();
                 param.put("grade",CoreConfig.grade);
                 param.put("subject",CoreConfig.subject);
-                Request request = okHttpUtils.getRequest("",param,"image",fileName);
+                Request request = okHttpUtils.getRequest("http://114.215.83.97:9090/HWWebPost.asmx/UploadImg",param,"base64img",fileName);
                 Call call = okHttpClient.newCall(request);
                 call.enqueue(new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
                         msg.what = UPLOAD_FALUE;
+                        msg.obj = "上传图片失败";
+                        mHanlder.sendMessage(msg);
+                        Log.e("iiiiiiii22222","上传失败,"+e.getMessage());
                     }
 
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
                         msg.what = UPLOAD_SUCESS;
+                        msg.obj = "上传图片成功";
+                        mHanlder.sendMessage(msg);
+                        Log.e("iiiiiiii22222","上传成功,"+response.message());
                     }
-                });
+                });*/
 
-                mHanlder.sendMessage(msg);
+                InfoEntity infoEntity = new InfoEntity();
+                infoEntity.setGrade("" + CoreConfig.grade);
+                infoEntity.setSubject(CoreConfig.subject);
+                List<String> photos = new ArrayList<>();
+                long startBaseImgTime = System.currentTimeMillis();
+                for(int i=0;i<mSelectPhotoList.size();i++){
+                    long tmpTIme = System.currentTimeMillis();
+                    String tmpEncode = ImageBase64.getImageStr(mSelectPhotoList.get(i).getPhotoPath());
+                    //tmpEncode = tmpEncode.replace("+","%2B");
+                    photos.add(tmpEncode);
+                    long tmpEndTime = System.currentTimeMillis();
+                    Log.e("ssssssssss",i + ",PhotoPath: "+mSelectPhotoList.get(i).getPhotoPath()+",time: "+(tmpEndTime - tmpTIme));
+                }
+                long endBaseImgTime = System.currentTimeMillis();
+                Log.e("ssssssssss","all image base64 time : "+(endBaseImgTime - startBaseImgTime));
+                infoEntity.setBase64imgs(photos);
+
+                Gson gson = new Gson();
+                String postData = gson.toJson(infoEntity);
+
+                //postData = "{\"json_input\":"+postData + "}";
+                Log.e("ssssssssss","postData : "+postData);
+
+                /*
+                try {
+                    String callStr = OkHttpUtils.post(OkHttpUtils.upUrl, postData);
+                    JSONObject call_json = new JSONObject(callStr);
+                    final String msg2 = call_json.getString("msg");
+                    if (call_json.getInt("status") == 1){
+                        msg.what = UPLOAD_SUCESS;
+                        msg.obj = "上传图片成功";
+                        mHanlder.sendMessage(msg);
+                        Log.e("ssssssssss","上传成功,"+msg2);
+                    }else{
+                        msg.what = UPLOAD_FALUE;
+                        msg.obj = "上传图片失败";
+                        mHanlder.sendMessage(msg);
+                        Log.e("ssssssssss","上传失败,"+msg2);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    msg.what = UPLOAD_FALUE;
+                    msg.obj = "上传图片失败";
+                    mHanlder.sendMessage(msg);
+                    Log.e("iiiiiiii22222","上传失败,"+e.getMessage());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    msg.what = UPLOAD_FALUE;
+                    msg.obj = "上传图片失败";
+                    mHanlder.sendMessage(msg);
+                    Log.e("iiiiiiii22222","上传失败,"+e.getMessage());
+                }*/
+
+                Call<JsonObject> callImg = getApi().postImg(postData);
+                String result;
+                try {
+                    Response<JsonObject> res = callImg.execute();
+                    if (res.code() == 200) {
+                        if (res.body() != null) {
+                            result = res.body().toString() + "\n";
+                            NetResultEntity resultEntity = gson.fromJson(res.body(),NetResultEntity.class);
+                            if(resultEntity.getCode() == 0){
+                                msg.what = UPLOAD_SUCESS;
+                                msg.obj = "上传图片成功";
+                            }else{
+                                msg.what = UPLOAD_FALUE;
+                                msg.obj = resultEntity.getMsg();
+                            }
+                            mHanlder.sendMessage(msg);
+                            Log.e("ssssssssss","上传成功,"+result);
+                        } else {
+                            result = String.valueOf(res.code()) + "body is null ";
+                            msg.what = UPLOAD_FALUE;
+                            msg.obj = result;
+                            mHanlder.sendMessage(msg);
+                            Log.e("ssssssssss","上传失败,"+result);
+                        }
+                    } else {
+                        result = "上传失败,"+String.valueOf(res.code()) + ":\t" + res.message() ;
+                        msg.what = UPLOAD_FALUE;
+                        msg.obj = result;
+                        mHanlder.sendMessage(msg);
+                        Log.e("ssssssssss",result);
+                    }
+                } catch (IOException e) {
+                    result = "上传失败,"+"IOException. "+e.getMessage();
+                    msg.what = UPLOAD_FALUE;
+                    msg.obj = result;
+                    mHanlder.sendMessage(msg);
+                    Log.e("ssssssssss",result);
+                }
+
             }
         }).start();
     }
@@ -757,5 +863,21 @@ public class PhotoEditActivity extends CropImageActivity implements AdapterView.
             }
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+
+    private static UploadImageAPI getApi(){
+        if (api == null) {
+            synchronized (PhotoEditActivity.class) {
+                if (api == null) {
+                    retrofit = new Retrofit.Builder()
+                            .baseUrl(baseUrl)
+                            .addConverterFactory(GsonConverterFactory.create())
+                            .build();
+                    api = retrofit.create(UploadImageAPI.class);
+                }
+            }
+        }
+        return api;
     }
 }

@@ -2,21 +2,36 @@ package cn.finalteam.galleryfinal.utils;
 
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import cn.finalteam.toolsfinal.io.FilenameUtils;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
  * Created by liupaipai on 2018/7/9.
  */
 
 public class OkHttpUtils {
+    public static final String upUrl = "http://114.215.83.97:9090/HWWebPost.asmx/UploadImg";
     private static final MediaType MEDIA_TYPE_PNG = MediaType.parse("image/png");
+    public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+
+    public final static int CONNECT_TIMEOUT = 60;
+    public final static int READ_TIMEOUT = 100;
+    public final static int WRITE_TIMEOUT = 60;
+    public static final OkHttpClient client = new OkHttpClient.Builder()
+            .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)//设置读取超时时间
+            .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)//设置写的超时时间
+            .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)//设置连接超时时间
+            .build();
 
     /**
      * 通过上传的文件的完整路径生成RequestBody
@@ -60,6 +75,21 @@ public class OkHttpUtils {
         builder.url(url)
                 .post(getRequestBody(params,pic_key,fileNames));
         return builder.build();
+    }
+
+
+    public static String post(String url, String json) throws IOException {
+        RequestBody body = RequestBody.create(JSON, json);
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .build();
+        Response response = client.newCall(request).execute();
+        if (response.isSuccessful()) {
+            return response.body().string();
+        } else {
+            throw new IOException("Unexpected code " + response);
+        }
     }
 
     /**
